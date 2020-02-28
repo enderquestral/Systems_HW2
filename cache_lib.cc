@@ -9,7 +9,7 @@
 #include <cassert>
 
 using namespace std;
-using storage_unit = pair<Cache::val_type, Cache::size_type>
+using storage_unit = pair<Cache::val_type, Cache::size_type>;
 
 /*
  * Notes from Eitan:
@@ -33,33 +33,38 @@ using storage_unit = pair<Cache::val_type, Cache::size_type>
 class Cache::Impl
 {
 	// Changed explicit types in unordered_map below to types defined in cache.hh
-	unordered_map<key_type, storage_unit, hash_func> map;
+	
 	//vector<key_type> holdkeys;
 	// There is almost definitely a purpose for this vector, and I'm sorry for commenting it out,
 	// but I can't find its purpose and it's giving me a compile error for trying to make a vector 
 	// of consts. For now, I'm commenting it out.
-	size_type maximummemory;
-	size_type usedmemory;
 	
-	Impl(size_type maxmem, evictor_type evictor, hash_func hasher) /*: map(1, hasher)*/ { //set to 1 bucket?
+
+	/*Impl(size_type maxmem, float max_load_factor, Evictor* evictor, hash_func hasher) { //set to 1 bucket?
 		// Also am not sure what the purpose is of putting the hash function within the map?
 		// Commenting it out for now.
         unordered_map<key_type, storage_unit, hash_func> altmap(0, hasher); 
-		altmap.max_load_factor(0.75); //Init max load factor to something
+		altmap.max_load_factor(max_load_factor); //Init max load factor to something
         map = altmap;
 		usedmemory = 0;
+		evictor_ = evictor;
 		maximummemory = maxmem;
 
 		//Init with something here
-	}
-	
+	}*/
+	public:
+	size_type maximummemory;
+	size_type usedmemory;
+	Evictor* evictor_;
+	unordered_map<key_type, storage_unit, hash_func> map;
 	bool del(key_type key) {
 		// Somehow, should be able to get the size of key's value, so we can subtract it
 		// from usedmemory, since we're handling that manually
         if (map.find(key) != map.end()) //if Overwriting?
         {
-            auto heldvalue  = map[key];
-            usedmemory -= heldvalue[1];
+            //auto heldvalue  = map.at(key);
+			usedmemory -= map.at(key).second;
+			//usedmemory -= heldvalue.second();
 		    map.erase(key);
             return true;
         }
@@ -78,9 +83,12 @@ class Cache::Impl
 		{
             //eventurally replace this with evictor 
 			// Just erases the first element in map
-            auto tempspot = map.begin();
+            //auto tempspot = map.begin();
+			del(map.begin()->first);
+			auto tempstorage = map.begin()->second.second;
+			usedmemory -= tempstorage;
 			map.erase(map.begin());
-            usedmemory -= tempspot[1];
+            
 			// I think there's more to do than just this; adjusting usedmemory,
 			// at the very least.
 				// How much to decrease usedmemory by? Is 'size' a constant
@@ -101,14 +109,17 @@ class Cache::Impl
 	
 	}
 	
-	val_type get(byte_type key, size_type& val_size) const{
+	val_type get(key_type key, size_type& val_size) const{
 		// map.find(key) returns map.end() if map has no V-K pair with key 'key'
-		if (map.find(key) == map.end())
+		if (map.find(key) == map.end()){
 			return nullptr;
-        auto tempholder = map.at(key);
-        val_size = tempholder.second();
-    
-		return tempholder.first();
+		}
+			
+        //auto tempholder = map.at(key);
+        val_size = map.at(key).second;
+
+		return map.at(key).first;
+		//return tempholder.first();
 		// Use map.at(key) instead of map[key] because .at() returns a reference, which is good
 		// because val_type is a pointer.
         // Sets the actual size of the returned value (in bytes) in val_size.
@@ -135,15 +146,18 @@ class Cache::Impl
 //Indexer, function, function
 
 		// Commented out default values since they're already defined in the declaration
-  Cache(size_type maxmem,
-        float max_load_factor = 0.75,
-        Evictor* evictor = nullptr,
-        hash_func hasher = std::hash<key_type>())
-	: pImpl_(new Impl(maxmem, evictor, hasher)) {
+Cache::Cache(size_type maxmem, float max_load_factor, Evictor* evictor , hash_func hasher) : pImpl_(new Impl()) {
+		unordered_map<key_type, storage_unit, hash_func> altmap(0, hasher);
+
+		pImpl_->map = altmap;
+		pImpl_->map.max_load_factor(max_load_factor);
+		pImpl_->usedmemory =0;
+		pImpl_->maximummemory = maxmem;
+		pImpl_->evictor_ = evictor;
 	// Cache constructor
 }
 
-Cache::~Cache() = default; //Maybe not default if we need to do some memory management?
+Cache::~Cache() = default;//Maybe not default if we need to do some memory management?
 	// Cache destructor
 	// Don't need to explicitly 'delete pImpl_' because it's a unique_ptr,
 	// and it'll delete itself once it's out of scope
@@ -151,7 +165,7 @@ Cache::~Cache() = default; //Maybe not default if we need to do some memory mana
 
 // Methods:
 
-void Cache::set(byte_type key, val_type val, size_type size) {
+void Cache::set(key_type key, val_type val, size_type size) {
 	// Description taken from .hh file:
 	//
 	// Add a <key, value> pair to the cache.
@@ -170,7 +184,7 @@ Cache::val_type Cache::get(key_type key, size_type& val_size) const {
 	return pImpl_->get(key, val_size);
 }
 
-bool Cache::del(byte_type key) {
+bool Cache::del(key_type key) {
 	// If an object w/ key 'key' is in the cache, remove it
 	return pImpl_->del(key);
 }
@@ -179,4 +193,8 @@ bool Cache::del(byte_type key) {
 Cache::size_type Cache::space_used() const {
 	// Compute the total amount of memory used by all the current cache values (keys not included)
 	return pImpl_->space_used();
+}
+
+void Cache::reset(){
+	pImpl_->reset();
 }

@@ -56,7 +56,9 @@ class Cache::Impl
 	size_type maximummemory;
 	size_type usedmemory;
 	Evictor* evictor_;
+	hash_func used_hasher; 
 	unordered_map<key_type, storage_unit, hash_func> map;
+	
 	bool del(key_type key) {
 		// Somehow, should be able to get the size of key's value, so we can subtract it
 		// from usedmemory, since we're handling that manually
@@ -65,7 +67,8 @@ class Cache::Impl
             //auto heldvalue  = map.at(key);
 			usedmemory -= map.at(key).second;
 			//usedmemory -= heldvalue.second();
-		    map.erase(key);
+		 	delete[] map.at(key).first;   
+			map.erase(key);
             return true;
         }
         return false;
@@ -75,11 +78,32 @@ class Cache::Impl
 		// While there isn't enough space for the new pair, evict something and then go on
         if (map.find(key) != map.end()) //if Overwriting?
         {
-            map.erase(key);
+			del(key);
         }
         
-        storage_unit onepair = make_pair(val, size); //Make a tuple to be associated with a given key
-		while (usedmemory + size > maximummemory)
+        //storage_unit onepair = make_pair(val, size); //Make a tuple to be associated with a given key
+		if (usedmemory + size <= maximummemory)
+		{
+			byte_type *copyavalue = new byte_type[size];
+			int j =0;
+			while (val[j] != '\0')
+			{
+				copyavalue[j] = val[j];
+				j++;
+			}
+			storage_unit onepair = make_pair(copyavalue, size);
+			//onepair.first = copyavalue;
+			//map.insert(make_pair(key, onepair));
+			map[key] = onepair; //might make things a bit iffy?
+			usedmemory += size;
+		}
+		else //eviction cases. Default is get rid of first thing in map.
+		{
+			auto beginpoint = map.begin();
+			del(beginpoint ->first);
+		}
+		
+		/*while (usedmemory + size > maximummemory)
 		{
             //eventurally replace this with evictor 
 			// Just erases the first element in map
@@ -95,10 +119,9 @@ class Cache::Impl
 				// for the val_type, or is it defined for each value?
 				// Then we'd have to find that for *map.begin() and
 				// subtract it from usedmemory.
-		}
+		}*/
 		
-		map[key] = onepair;
-		usedmemory += size;
+		
 
 		// map[key] = static_cast<const void*> (val);
 		// I'm not super sure why static_cast was there? For a while, I was getting similar compile
@@ -132,6 +155,11 @@ class Cache::Impl
 	}
 	
 	void reset(){
+		for (auto &&i : map)
+		{
+			del(i.first);
+		}
+		
 		usedmemory = 0;
 		map.clear();
 		//holdkeys.clear();
@@ -147,9 +175,23 @@ class Cache::Impl
 
 		// Commented out default values since they're already defined in the declaration
 Cache::Cache(size_type maxmem, float max_load_factor, Evictor* evictor , hash_func hasher) : pImpl_(new Impl()) {
-		unordered_map<key_type, storage_unit, hash_func> altmap(0, hasher);
+		
+		if (hasher == nullptr)
+		{
+			//Use default hasher in unordered_map
+			//cout << pImpl_->map.bucket_count() <<"\n";
+			unordered_map<key_type, storage_unit, hash_func> altmap(4);
+			pImpl_->map = altmap;
+		}
+		else{
 
-		pImpl_->map = altmap;
+			pImpl_->used_hasher =  hasher;
+			unordered_map<key_type, storage_unit, hash_func> altmap(4, hasher);
+			pImpl_->map = altmap;
+		}
+		
+
+		//pImpl_->map = altmap;
 		pImpl_->map.max_load_factor(max_load_factor);
 		pImpl_->usedmemory =0;
 		pImpl_->maximummemory = maxmem;

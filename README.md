@@ -20,7 +20,7 @@ Cache constructor.
 
 ## Collision Resolution
 
-The unordered\_map type has innate collision resolution using separate chaining. We tested for this
+The unordered\_map class has innate collision resolution using separate chaining. We tested for this
 by checking the size of certain buckets in the created map while setting and deleting values; when
 multiple keys hashed to the same bucket, the number of elements in that bucket increased rather than
 another bucket gaining an element. Implementing a second layer of collision resolution over the one
@@ -30,7 +30,10 @@ collision resolution already implemented in unordered\_map.
 
 ## Dynamic Resizing
 
-
+The unordered\_map class also innately handles dynamic resizing using the rehash() method. It checks
+at every operation if the load factor is going to increase beyond the maximum; if it is, it creates a
+new unordered\_map with more buckets, rehashes all the current elements, and places them in the new 
+table. It then deallocates the old unordered\_map.
 
 ## Eviction Policy
 

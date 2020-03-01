@@ -1,4 +1,5 @@
 #include "cache_lib.cc"
+#include "fifo_evictor.cc"
 #include <cassert>
 
 /*For testing purposes, assume the data payload is always of type C string, and don't forget to account for the last '\0' character 
@@ -58,6 +59,8 @@ int main(){
     //cout << defaultedcache.pImpl_->map.bucket("key1") << '\n';
     //We don't have access to pImpl_ as it is private... but, if we set pImpl_ to public, then the two above numbers should be different.
 
+    //If we use this, (presuming we use open addressing), we intentionally hash different values to same bucket, check if size of that bucket is 1.
+    
 
     //test del  
     size = 0;
@@ -102,12 +105,15 @@ int main(){
     cache2.set("key1", "komencopaleontologiokonservatoriacestrigontaj", 46); //Overwrite entries, change sizes
     cache2.get("key1", altsize);
     //assert(altsize = 8);
-    assert(altsize == 46); //IS NOT PROPERLY OVERWRITING ENTRIES
+    assert(altsize == 46);
     assert(cache2.space_used() == 70);
     cache2.set("key3", "waaay2lon", 11); //Overwrite entries, change sizes
     cache2.get("key3", altsize);
     assert(altsize == 11);
     assert(cache2.space_used() == 73);
+
+    //eviction policy test
+
 
     return 0;
 }

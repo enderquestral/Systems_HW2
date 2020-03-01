@@ -67,70 +67,70 @@ class Cache::Impl
             //auto heldvalue  = map.at(key);
 			usedmemory -= map.at(key).second;
 			//usedmemory -= heldvalue.second();
-		 	delete[] map.at(key).first;   
+			//auto givenbucketforkey = map.bucket(key);
+			//auto currentnumberforbucket = map.bucket_size(givenbucketforkey);
+		 	//auto currentbucketcount = map.bucket_count();
+			delete[] map.at(key).first;   
 			map.erase(key);
-            return true;
+			//assert(map.bucket_size(givenbucketforkey) != currentnumberforbucket);
+			//assert(currentbucketcount == map.bucket_count());
+			return true;
         }
         return false;
 	}
 	
 	void set(key_type key, val_type val, size_type size) {
 		// While there isn't enough space for the new pair, evict something and then go on
-        if (map.find(key) != map.end()) //if Overwriting?
+        
+        byte_type *copyavalue = new byte_type[size];
+		int j =0;
+		while (val[j] != '\0')
+		{
+			copyavalue[j] = val[j];
+			j++;
+		}
+		if (map.find(key) != map.end()) //If two of same key overwrite
         {
 			del(key);
         }
-        
         //storage_unit onepair = make_pair(val, size); //Make a tuple to be associated with a given key
 		if (usedmemory + size <= maximummemory)
 		{
-			byte_type *copyavalue = new byte_type[size];
-			int j =0;
-			while (val[j] != '\0')
-			{
-				copyavalue[j] = val[j];
-				j++;
-			}
 			storage_unit onepair = make_pair(copyavalue, size);
-			//onepair.first = copyavalue;
-			//map.insert(make_pair(key, onepair));
 			map[key] = onepair; //might make things a bit iffy?
 			usedmemory += size;
+			map.reserve(map.size()); //rehashes it s.t. it has optimal bucket size for its size. May change order of iterations, shouldn't lose info.
+			if (evictor_ != nullptr)
+			{
+				evictor_->touch_key(key);
+			}
+			
 		}
 		else //eviction cases. Default is get rid of first thing in map.
 		{
-			auto beginpoint = map.begin();
-			del(beginpoint ->first);
+			if (evictor_ == nullptr) //if nullptr, cache does not replace old items and disallows insertions that exceed maxmem
+			{
+				//Nothing happens
+				delete[] copyavalue;
+			}
+			else{
+				while (usedmemory + size > maximummemory)
+				{
+					del(evictor_->evict());
+				}
+				storage_unit onepair = make_pair(copyavalue, size);
+				map[key] = onepair; //might make things a bit iffy?
+				usedmemory += size;
+				map.reserve(map.size()); //rehashes it s.t. it has optimal bucket size for its size. May change order of iterations, shouldn't lose info.
+					
+			}
+			
+			//auto beginpoint = map.begin();
+			//del(beginpoint->first);
+			//delete[] copyavalue;
 		}
-		
-		/*while (usedmemory + size > maximummemory)
-		{
-            //eventurally replace this with evictor 
-			// Just erases the first element in map
-            //auto tempspot = map.begin();
-			del(map.begin()->first);
-			auto tempstorage = map.begin()->second.second;
-			usedmemory -= tempstorage;
-			map.erase(map.begin());
-            
-			// I think there's more to do than just this; adjusting usedmemory,
-			// at the very least.
-				// How much to decrease usedmemory by? Is 'size' a constant
-				// for the val_type, or is it defined for each value?
-				// Then we'd have to find that for *map.begin() and
-				// subtract it from usedmemory.
-		}*/
-		
-		
-
-		// map[key] = static_cast<const void*> (val);
-		// I'm not super sure why static_cast was there? For a while, I was getting similar compile
-		// errors, but changing the types in map to byte_type and val_type got rid of them,
-		// so it's possible it's not needed anymore.
-		
-		//map.insert((key,val));
-	
 	}
+	
 	
 	val_type get(key_type key, size_type& val_size) const{
 		// map.find(key) returns map.end() if map has no V-K pair with key 'key'
@@ -140,7 +140,7 @@ class Cache::Impl
 			
         //auto tempholder = map.at(key);
         val_size = map.at(key).second;
-
+		//evictor_->touch_key(key); //may not be required?
 		return map.at(key).first;
 		//return tempholder.first();
 		// Use map.at(key) instead of map[key] because .at() returns a reference, which is good

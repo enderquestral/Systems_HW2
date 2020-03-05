@@ -28,6 +28,6 @@ void LRU_Evictor::touch_key(const key_type& key){
         values.erase(location);
     }
     
-    values.push_back();
+    values.push_back(key);
 }
 

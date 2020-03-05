@@ -1,4 +1,5 @@
 #include "evictor.hh"
+#include "lru_evictor.hh"
 #include "fifo_evictor.hh"
 #include "cache.hh"
 #include <cassert>
@@ -17,7 +18,6 @@ int return_number(key_type str){
 function<size_t(key_type)> myhasher = return_number;  //takes str turns it into its str size
 
 
-constexpr int repeats = 10000;
 int main(){
     auto cache = Cache(40, 0.75, nullptr, myhasher);
     auto defaultedcache = Cache(32); //has no given hasher, uses its own default
@@ -149,7 +149,8 @@ int main(){
     Cache::val_type valev1 = "abcdefghijklmnopqrstuvwxyz";
     Cache::val_type valev2 = "I";
     Cache::val_type valev3 = "thisisatest";
-
+    Cache::val_type valev4 = "object";
+        //FIFO test
     auto FIFO = Fifo_Evictor();
     auto cache3 = Cache(30, 0.75, &FIFO);
     cache3.set("key1", valev1, 27);
@@ -157,14 +158,30 @@ int main(){
     assert(*cache3.get("key1", altsize) == *valev1);
     assert(*cache3.get("key2", altsize) == *valev2);
     cache3.set("key3", valev3, 12);
-    assert(cache.get("key1", altsize) == nullptr);
+    assert(cache3.get("key1", altsize) == nullptr);
     assert(*cache3.get("key2", altsize) == *valev2);
     assert(*cache3.get("key3", altsize) == *valev3);
 
-	
+        //LRU TEST
+    auto LRU  = LRU_Evictor();
+    auto cache4 = Cache(40, 0.75, &LRU);
+    cache4.set("key1", valev1, 27);
+    cache4.set("key2", valev2, 2); //make sure that chache is not instantly getting rid of things
+    assert(*cache4.get("key1", altsize) == *valev1);
+    assert(*cache4.get("key2", altsize) == *valev2);
+    cache4.set("key4", valev4, 7); 
+    assert(cache4.space_used() == 36);
+    cache4.set("key3", valev3, 12);
+    assert(cache4.get("key1", altsize) == nullptr);
+    assert(*cache4.get("key2", altsize) == *valev2);
+    assert(*cache4.get("key3", altsize) == *valev3);
+    assert(*cache4.get("key4", altsize) == *valev4);
+
+
     // Delete all remaining caches
     defaultedcache.reset();
     cache2.reset();
+    cache3.reset();
     cache3.reset();
     //small_cache.reset();
     return 0;

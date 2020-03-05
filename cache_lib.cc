@@ -154,15 +154,15 @@ class Cache::Impl
 	}
 	
 	void reset(){
-		for (auto &&i : map)
+		auto i = map.begin();
+		while(i != map.end())
 		{
-			del(i.first);
+			del(i->first);
+			i = map.begin();
 		}
 		
 		usedmemory = 0;
 		map.clear();
-		//holdkeys.clear();
-		// Holdover from commenting out holdkeys from the constructor
 		maximummemory = 0;
 	}
 };

@@ -39,18 +39,6 @@ class Cache::Impl
 	// but I can't find its purpose and it's giving me a compile error for trying to make a vector 
 	// of consts. For now, I'm commenting it out.
 	
-
-	/*Impl(size_type maxmem, float max_load_factor, Evictor* evictor, hash_func hasher) { //set to 1 bucket?
-		// Also am not sure what the purpose is of putting the hash function within the map?
-		// Commenting it out for now.
-        unordered_map<key_type, storage_unit, hash_func> altmap(0, hasher); 
-		altmap.max_load_factor(max_load_factor); //Init max load factor to something
-        map = altmap;
-		usedmemory = 0;
-		evictor_ = evictor;
-		maximummemory = maxmem;
-		//Init with something here
-	}*/
 	public:
 	size_type maximummemory;
 	size_type usedmemory;
@@ -63,16 +51,12 @@ class Cache::Impl
 		// from usedmemory, since we're handling that manually
         if (map.find(key) != map.end()) //if Overwriting?
         {
-            //auto heldvalue  = map.at(key);
 			usedmemory -= map.at(key).second;
-			//usedmemory -= heldvalue.second();
-			//auto givenbucketforkey = map.bucket(key);
-			//auto currentnumberforbucket = map.bucket_size(givenbucketforkey);
-		 	//auto currentbucketcount = map.bucket_count();
 			delete[] map.at(key).first;   
 			map.erase(key);
-			//assert(map.bucket_size(givenbucketforkey) != currentnumberforbucket);
-			//assert(currentbucketcount == map.bucket_count());
+
+			//write something to key IF THE KEY IS NOT COPYING ITSELF TO NEW LOCATION. Something for the evictor to recognize. 
+			// MAKE SURE THAT WRITING TO THE KEY (with a ptr) DOESN'T COPY. DEFREFRENCING IT MAY TRIGGER COPY. 
 			return true;
         }
         return false;
@@ -80,7 +64,7 @@ class Cache::Impl
 	
 	void set(key_type key, val_type val, size_type size) {
 		// While there isn't enough space for the new pair, evict something and then go on
-        
+        //check if standard string CAN be deep copied. They're defined to behave as if they copy.  
         byte_type *copyavalue = new byte_type[size];
 		int j =0;
 		while (val[j] != '\0')
@@ -92,7 +76,6 @@ class Cache::Impl
         {
 			del(key);
         }
-        //storage_unit onepair = make_pair(val, size); //Make a tuple to be associated with a given key
 		if (usedmemory + size <= maximummemory)
 		{
 			storage_unit onepair = make_pair(copyavalue, size);
@@ -115,7 +98,13 @@ class Cache::Impl
 			else{
 				while (usedmemory + size > maximummemory)
 				{
-					del(evictor_->evict());
+					//Fix this st. if the thing given by evictor isn't there, give call until it isn't.
+					auto evictoristhere = del(evictor_->evict());
+					while (!evictoristhere)
+					{
+						evictoristhere = del(evictor_->evict());
+					}
+					
 				}
 				storage_unit onepair = make_pair(copyavalue, size);
 				map[key] = onepair; //might make things a bit iffy?
@@ -123,25 +112,21 @@ class Cache::Impl
 				map.reserve(map.size()); //rehashes it s.t. it has optimal bucket size for its size. May change order of iterations, shouldn't lose info.
 					
 			}
-			
-			//auto beginpoint = map.begin();
-			//del(beginpoint->first);
-			//delete[] copyavalue;
 		}
 	}
 	
 	
 	val_type get(key_type key, size_type& val_size) const{
-		// map.find(key) returns map.end() if map has no V-K pair with key 'key'
+		
 		if (map.find(key) == map.end()){
 			return nullptr;
 		}
-			
-        //auto tempholder = map.at(key);
+		if (evictor_ != nullptr)
+		{
+			evictor_->touch_key(key);
+		}
         val_size = map.at(key).second;
-		//evictor_->touch_key(key); //may not be required?
 		return map.at(key).first;
-		//return tempholder.first();
 		// Use map.at(key) instead of map[key] because .at() returns a reference, which is good
 		// because val_type is a pointer.
         // Sets the actual size of the returned value (in bytes) in val_size.
@@ -155,7 +140,7 @@ class Cache::Impl
 	
 	void reset(){
 		auto i = map.begin();
-		while(i != map.end())
+		while (i != map.end())
 		{
 			del(i->first);
 			i = map.begin();
@@ -163,6 +148,7 @@ class Cache::Impl
 		
 		usedmemory = 0;
 		map.clear();
+		// Holdover from commenting out holdkeys from the constructor
 		maximummemory = 0;
 	}
 };
@@ -178,7 +164,6 @@ Cache::Cache(size_type maxmem, float max_load_factor, Evictor* evictor , hash_fu
 		if (hasher == nullptr)
 		{
 			//Use default hasher in unordered_map
-			//cout << pImpl_->map.bucket_count() <<"\n";
 			unordered_map<key_type, storage_unit, hash_func> altmap(4);
 			pImpl_->map = altmap;
 		}
@@ -239,4 +224,3 @@ Cache::size_type Cache::space_used() const {
 void Cache::reset(){
 	pImpl_->reset();
 }
-

@@ -9,8 +9,7 @@ using namespace std;
 class Fifo_Evictor:public Evictor
 {
 private:
-    //I would LIKE to make this a queue since these are best for FIFO... but, the queue has no way to account for moving an object if its touched again
-    deque<key_type> values;
+    queue<key_type, list<key_type>> values;
 public:
     const key_type evict();
     void touch_key(const key_type&);

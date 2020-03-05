@@ -14,21 +14,15 @@ const key_type Fifo_Evictor::evict(){ //Have to find a way to deal with potnetia
     {
         key_type lastkey = values.front();
         //check if memory address has been marked with while loop. if so, ignore it. return last thing that hasn't been marked. 
-        values.pop_front();
+        values.pop();
         return lastkey;
     }
-    return NULL; //empty str
+    return values.front();
 }
 
 
 void Fifo_Evictor::touch_key(const key_type& key){  //worry about same key/overwriting a key
     //touch key. if key is already in queue, remove it and then put it back via pushing it
-    deque<key_type>::iterator iter = find(values.begin(), values.end(), key);
-    if (iter != values.end())
-    {
-        values.erase(iter);
-    }
-    
-    values.push_back(key);
+    values.push(key);
 }
 

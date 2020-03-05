@@ -37,4 +37,19 @@ table. It then deallocates the old unordered\_map.
 
 ## Eviction Policy
 
+The FIFO eviction policy was implemented with the Fifo\_Evictor class, which uses a std::queue of
+key\_type values to keep track of the order of keys to evict. For every set() and get() called,
+the touch\_key method is called, which adds the relevant key to the back of the queue. Then whenever
+set() is called, cache\_lib checks if there is space for the desired addition, and if there isn't,
+the K-V pair with the key at the front of the queue is deleted from the unordered map until the
+cache has sufficient space for the new value.
 
+#### The Makefile
+
+The Makefile links the runnable program, test\_cache\_lib, with its dependent libraries, cache\_lib
+and fifo\_evictor. The relevant commands are: 
+(1) make		- Compiles test\_cache\_lib and its dependents 
+(2) make test		- Runs ./test\_cache\_lib. On a successful run, the entire file will run with no output 
+(3) make valgrind	- Runs valgrind ./test\_cache\_lib to check for memory leaks 
+(4) make debug		- Runs the gdb debugger on test\_cache\_lib 
+(5) make clean		- Tidies up \*.o and executable files 

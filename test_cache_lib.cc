@@ -1,11 +1,13 @@
-#include "cache_lib.cc"
-#include "fifo_evictor.cc"
+#include "evictor.hh"
+#include "cache.hh"
 #include <cassert>
 
 /*For testing purposes, assume the data payload is always of type C string, and don't forget to account for the last '\0' character 
 at the end of the line. It will be easier to debug and print data of this type.
-
 */
+
+using namespace std;
+
 int return_number(key_type str){
     size_t length = str.length();
     return length;
@@ -62,6 +64,35 @@ int main(){
     //If we use this, (presuming we use open addressing), we intentionally hash different values to same bucket, check if size of that bucket is 1.
     
 
+    // Test that the unordered_map class does innately dynamically resize when the load factor
+    // reaches beyond its max.
+    
+    // Like the above, the following will only compile if pImpl_ is made public.
+    auto small_cache = Cache(50, 0.75);
+    /*
+    cout << "Start: " << small_cache.pImpl_->map.bucket_count() << endl;
+    small_cache.set("s_k1", "s_v1", 5);
+    cout << "1 K-V: " << small_cache.pImpl_->map.bucket_count() << endl;
+    small_cache.set("s_k2", "s_v2", 5);
+    assert(small_cache.pImpl_->map.bucket_count() == 5);
+    cout << "2 K-V: " << small_cache.pImpl_->map.bucket_count() << endl;
+    small_cache.set("s_k3", "s_v3", 5);
+    assert(small_cache.pImpl_->map.bucket_count() > 5);
+    cout << "3 K-V: " << small_cache.pImpl_->map.bucket_count() << endl;
+    small_cache.set("s_k4", "s_v4", 5);
+    cout << "4 K-V: " << small_cache.pImpl_->map.bucket_count() << endl;
+    small_cache.set("s_k5", "s_v5", 5);
+    cout << "5 K-V: " << small_cache.pImpl_->map.bucket_count() << endl;
+    small_cache.set("s_k6", "s_v6", 5);
+    assert(small_cache.pImpl_->map.bucket_count() == 11);
+    small_cache.set("s_k7", "s_v7", 5);
+    cout << "7 K-V: " << small_cache.pImpl_->map.bucket_count() << endl;
+    assert(small_cache.pImpl_->map.bucket_count() > 11);
+    small_cache.set("s_k8", "s_v8", 5);
+    */
+
+    
+
     //test del  
     size = 0;
     cache.del("key1");
@@ -111,9 +142,13 @@ int main(){
     cache2.get("key3", altsize);
     assert(altsize == 11);
     assert(cache2.space_used() == 73);
-
+    
     //eviction policy test
 
-
+	
+    // Delete all remaining caches
+    defaultedcache.reset();
+    cache2.reset();
+    small_cache.reset();
     return 0;
 }

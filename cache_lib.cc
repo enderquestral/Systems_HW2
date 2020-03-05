@@ -72,6 +72,10 @@ class Cache::Impl
 		 	//auto currentbucketcount = map.bucket_count();
 			delete[] map.at(key).first;   
 			map.erase(key);
+
+			//write something to key IF THE KEY IS NOT COPYING ITSELF TO NEW LOCATION. Something for the evictor to recognize. 
+			// MAKE SURE THAT WRITING TO THE KEY (with a ptr) DOESN'T COPY. DEFREFRENCING IT MAY TRIGGER COPY. 
+			
 			//assert(map.bucket_size(givenbucketforkey) != currentnumberforbucket);
 			//assert(currentbucketcount == map.bucket_count());
 			return true;
@@ -81,7 +85,7 @@ class Cache::Impl
 	
 	void set(key_type key, val_type val, size_type size) {
 		// While there isn't enough space for the new pair, evict something and then go on
-        
+        //check if standard string CAN be deep copied. They're defined to behave as if they copy.  
         byte_type *copyavalue = new byte_type[size];
 		int j =0;
 		while (val[j] != '\0')
@@ -116,7 +120,13 @@ class Cache::Impl
 			else{
 				while (usedmemory + size > maximummemory)
 				{
-					del(evictor_->evict());
+					//Fix this st. if the thing given by evictor isn't there, give call until it isn't.
+					auto evictoristhere = del(evictor_->evict());
+					while (!evictoristhere)
+					{
+						evictoristhere = del(evictor_->evict());
+					}
+					
 				}
 				storage_unit onepair = make_pair(copyavalue, size);
 				map[key] = onepair; //might make things a bit iffy?
@@ -137,10 +147,8 @@ class Cache::Impl
 		if (map.find(key) == map.end()){
 			return nullptr;
 		}
-			
-        //auto tempholder = map.at(key);
+		//evictor_->touch_key(key);
         val_size = map.at(key).second;
-		//evictor_->touch_key(key); //may not be required?
 		return map.at(key).first;
 		//return tempholder.first();
 		// Use map.at(key) instead of map[key] because .at() returns a reference, which is good
@@ -155,14 +163,15 @@ class Cache::Impl
 	}
 	
 	void reset(){
-		for (auto &&i : map)
+		auto i = map.begin();
+		while (i != map.end())
 		{
-			del(i.first);
+			del(i->first);
+			i = map.begin();
 		}
 		
 		usedmemory = 0;
 		map.clear();
-		//holdkeys.clear();
 		// Holdover from commenting out holdkeys from the constructor
 		maximummemory = 0;
 	}

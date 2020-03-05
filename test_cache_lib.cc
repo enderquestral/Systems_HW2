@@ -1,11 +1,14 @@
-#include "cache_lib.cc"
-//#include "fifo_evictor.cc"
+#include "evictor.hh"
+#include "cache.hh"
 #include <cassert>
 
 /*For testing purposes, assume the data payload is always of type C string, and don't forget to account for the last '\0' character 
 at the end of the line. It will be easier to debug and print data of this type.
 
 */
+
+using namespace std;
+
 int return_number(key_type str){
     size_t length = str.length();
     return length;
@@ -143,6 +146,10 @@ int main(){
     
     //eviction policy test
 
-
+	
+    // Delete all remaining caches
+    defaultedcache.reset();
+    cache2.reset();
+    small_cache.reset();
     return 0;
 }

@@ -1,5 +1,8 @@
 #include "evictor.hh"
+<<<<<<< HEAD
 #include "lru_evictor.hh"
+=======
+>>>>>>> origin/master
 #include "fifo_evictor.hh"
 #include "cache.hh"
 #include <cassert>
@@ -149,8 +152,12 @@ int main(){
     Cache::val_type valev1 = "abcdefghijklmnopqrstuvwxyz";
     Cache::val_type valev2 = "I";
     Cache::val_type valev3 = "thisisatest";
+<<<<<<< HEAD
     Cache::val_type valev4 = "object";
         //FIFO test
+=======
+
+>>>>>>> origin/master
     auto FIFO = Fifo_Evictor();
     auto cache3 = Cache(30, 0.75, &FIFO);
     cache3.set("key1", valev1, 27);
@@ -158,6 +165,7 @@ int main(){
     assert(*cache3.get("key1", altsize) == *valev1);
     assert(*cache3.get("key2", altsize) == *valev2);
     cache3.set("key3", valev3, 12);
+<<<<<<< HEAD
     assert(cache3.get("key1", altsize) == nullptr);
     assert(*cache3.get("key2", altsize) == *valev2);
     assert(*cache3.get("key3", altsize) == *valev3);
@@ -178,11 +186,21 @@ int main(){
     assert(*cache4.get("key4", altsize) == *valev4);
 
 
+=======
+    assert(cache.get("key1", altsize) == nullptr);
+    assert(*cache3.get("key2", altsize) == *valev2);
+    assert(*cache3.get("key3", altsize) == *valev3);
+
+	
+>>>>>>> origin/master
     // Delete all remaining caches
     defaultedcache.reset();
     cache2.reset();
     cache3.reset();
+<<<<<<< HEAD
     cache3.reset();
+=======
+>>>>>>> origin/master
     //small_cache.reset();
     return 0;
 }

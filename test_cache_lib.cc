@@ -193,7 +193,6 @@ int main(){
     cache3.reset();
     cache3.reset();
 =======
->>>>>>> origin/master
     //small_cache.reset();
     return 0;
 }

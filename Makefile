@@ -6,11 +6,9 @@ default: test_cache_lib
 
 all: test_cache_lib
 
-<<<<<<< HEAD
 test_cache_lib : test_cache_lib.o cache_lib.o fifo_evictor.o lru_evictor.o
 =======
 test_cache_lib : test_cache_lib.o cache_lib.o fifo_evictor.o
->>>>>>> origin/master
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
 clean:

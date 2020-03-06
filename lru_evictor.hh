@@ -3,6 +3,7 @@
 #include <list>
 #include <deque>
 #include <queue>
+#include <algorithm>
 
 using namespace std;
 

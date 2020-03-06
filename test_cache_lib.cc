@@ -1,6 +1,5 @@
 #include "evictor.hh"
 #include "lru_evictor.hh"
-=======
 #include "fifo_evictor.hh"
 #include "cache.hh"
 #include <cassert>
@@ -152,8 +151,6 @@ int main(){
     Cache::val_type valev3 = "thisisatest";
     Cache::val_type valev4 = "object";
         //FIFO test
-=======
-
     auto FIFO = Fifo_Evictor();
     auto cache3 = Cache(30, 0.75, &FIFO);
     cache3.set("key1", valev1, 27);
@@ -170,29 +167,28 @@ int main(){
     auto cache4 = Cache(40, 0.75, &LRU);
     cache4.set("key1", valev1, 27);
     cache4.set("key2", valev2, 2); //make sure that chache is not instantly getting rid of things
-    assert(*cache4.get("key1", altsize) == *valev1);
     assert(*cache4.get("key2", altsize) == *valev2);
+    assert(*cache4.get("key1", altsize) == *valev1);
+    
     cache4.set("key4", valev4, 7); 
     assert(cache4.space_used() == 36);
     cache4.set("key3", valev3, 12);
-    assert(cache4.get("key1", altsize) == nullptr);
-    assert(*cache4.get("key2", altsize) == *valev2);
+    assert(cache4.get("key1", altsize) == nullptr); //Both key1 and key2 should have been gotten rid of for key3. 
+    assert(cache4.get("key2", altsize) == nullptr);
     assert(*cache4.get("key3", altsize) == *valev3);
     assert(*cache4.get("key4", altsize) == *valev4);
+    cache4.set("key5", valev1, 27); 
+    assert(cache4.get("key3", altsize) == nullptr); //Since we need to make some space and key3 was touched sooner, should be gotten rid of
+    assert(*cache4.get("key5", altsize) == *valev1);
+    assert(*cache4.get("key4", altsize) == *valev4);
+    
 
-
-=======
-    assert(cache.get("key1", altsize) == nullptr);
-    assert(*cache3.get("key2", altsize) == *valev2);
-    assert(*cache3.get("key3", altsize) == *valev3);
-
-	
     // Delete all remaining caches
     defaultedcache.reset();
     cache2.reset();
     cache3.reset();
-    cache3.reset();
-=======
+    cache4.reset();
+    
     //small_cache.reset();
     return 0;
 }

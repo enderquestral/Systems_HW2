@@ -22,7 +22,7 @@ const key_type LRU_Evictor::evict(){
 
 
 void LRU_Evictor::touch_key(const key_type& key){  
-    auto location  = find(values.begin(), values.end(), key);
+    auto location  = std::find(values.begin(), values.end(), key);
     if (location != values.end())
     {
         values.erase(location);

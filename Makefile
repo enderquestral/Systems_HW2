@@ -6,7 +6,7 @@ default: test_cache_lib
 
 all: test_cache_lib
 
-test_cache_lib : test_cache_lib.o cache_lib.o fifo_evictor.o lru_evictor.o
+test_cache_lib : test_cache_lib.o cache_lib.o lru_evictor.o fifo_evictor.o
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
 clean:

@@ -44,6 +44,7 @@ set() is called, cache\_lib checks if there is space for the desired addition, a
 the K-V pair with the key at the front of the queue is deleted from the unordered map until the
 cache has sufficient space for the new value.
 
+## LRU
 The LRU eviction policy was implemented with the LRU\_Evictor class, which uses a std::deque of
 key\_type values, similar to FIFO's std::queue but with the ability to access and then delete values from
 anywhere in the deque, not just the front. This allows the touch\_key method to update the position
@@ -60,3 +61,4 @@ and fifo\_evictor. The relevant commands are:
 (3) make valgrind	- Runs valgrind ./test\_cache\_lib to check for memory leaks  
 (4) make debug		- Runs the gdb debugger on test\_cache\_lib  
 (5) make clean		- Tidies up \*.o and executable files
+

@@ -44,6 +44,13 @@ set() is called, cache\_lib checks if there is space for the desired addition, a
 the K-V pair with the key at the front of the queue is deleted from the unordered map until the
 cache has sufficient space for the new value.
 
+The LRU eviction policy was implemented with the LRU\_Evictor class, which uses a std::deque of
+key\_type values, similar to FIFO's std::queue but with the ability to access and then delete values from
+anywhere in the deque, not just the front. This allows the touch\_key method to update the position
+of keys in the deque by deleting old values wherever they appear and then moving them to the back,
+so that setting or getting any key moves it to the back of the eviction order regardless of when
+it was added.
+
 ### The Makefile
 
 The Makefile links the runnable program, test\_cache\_lib, with its dependent libraries, cache\_lib
